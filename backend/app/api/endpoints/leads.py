@@ -79,6 +79,7 @@ class LeadResponse(BaseModel):
     location: LocationInfo
     category: Optional[str]
     subcategory: Optional[str]
+    source: Optional[str] = "craigslist"  # Source of the lead (craigslist, google_maps, linkedin, etc.)
     is_processed: bool
     is_contacted: bool
     status: str

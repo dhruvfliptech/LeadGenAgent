@@ -51,9 +51,9 @@ function App() {
       <Routes>
         <Route path="/" element={<Dashboard />} />
         {/* Journey 1: Multi-Source Lead Scraping - Enhanced UI */}
-        <Route path="/leads" element={<LeadsEnhanced />} />
+        <Route path="/leads" element={<Leads />} />
         <Route path="/leads/:id" element={<LeadDetail />} />
-        <Route path="/leads-old" element={<Leads />} />
+        <Route path="/leads-mock" element={<LeadsEnhanced />} />
         <Route path="/scraper" element={<ScraperNew />} />
         <Route path="/scraper-old" element={<Scraper />} />
         <Route path="/scraper/google-maps" element={<GoogleMapsScraper />} />

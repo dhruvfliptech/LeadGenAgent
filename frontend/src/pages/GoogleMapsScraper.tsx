@@ -1,22 +1,21 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { MapIcon, ArrowLeftIcon } from '@heroicons/react/24/outline'
-import LocationSelector from '@/components/LocationSelector'
+import { MapIcon, ArrowLeftIcon, MapPinIcon } from '@heroicons/react/24/outline'
+import { googleMapsApi } from '@/services/api'
 import toast from 'react-hot-toast'
 
 export default function GoogleMapsScraper() {
   const navigate = useNavigate()
-  const [selectedLocationIds, setSelectedLocationIds] = useState<number[]>([])
+  const [location, setLocation] = useState('vancouver')
   const [businessCategory, setBusinessCategory] = useState('')
-  const [radius, setRadius] = useState(10)
-  const [keywords, setKeywords] = useState('')
-  const [maxResults, setMaxResults] = useState(50)
-  const [priority, setPriority] = useState<'low' | 'normal' | 'high'>('normal')
-  const [enableEnrichment, setEnableEnrichment] = useState(false)
+  const [maxResults, setMaxResults] = useState(20)
+  const [extractEmails, setExtractEmails] = useState(true)
+  const [usePlacesAPI, setUsePlacesAPI] = useState(true) // Use Google Places API by default
+  const [isLoading, setIsLoading] = useState(false)
 
-  const handleSubmit = () => {
-    if (selectedLocationIds.length === 0) {
-      toast.error('Please select at least one location')
+  const handleSubmit = async () => {
+    if (!location.trim()) {
+      toast.error('Please enter a location')
       return
     }
 
@@ -25,22 +24,36 @@ export default function GoogleMapsScraper() {
       return
     }
 
-    const payload = {
-      source: 'google_maps',
-      location_ids: selectedLocationIds,
-      business_category: businessCategory.trim(),
-      radius,
-      keywords: keywords.trim() ? keywords.split(',').map(k => k.trim()).filter(Boolean) : undefined,
-      max_results: maxResults,
-      priority,
-      enable_enrichment: enableEnrichment,
+    setIsLoading(true)
+
+    try {
+      const response = await googleMapsApi.startScrape({
+        query: businessCategory.trim(),
+        location: location.trim(),
+        max_results: maxResults,
+        extract_emails: extractEmails,
+        use_places_api: usePlacesAPI, // Use Google Places API (reliable)
+      })
+
+      const jobId = response.data.job_id
+      const estimatedTime = response.data.estimated_time_seconds
+
+      toast.success(
+        `Google Maps scraping job started! Estimated time: ${Math.ceil(estimatedTime / 60)} minutes`,
+        { duration: 5000 }
+      )
+
+      console.log('Job started:', response.data)
+
+      // Navigate to scraper jobs page
+      setTimeout(() => navigate('/scraper'), 2000)
+    } catch (error: any) {
+      console.error('Failed to start scraping:', error)
+      const errorMessage = error.response?.data?.detail || error.message || 'Failed to start scraping job'
+      toast.error(errorMessage)
+    } finally {
+      setIsLoading(false)
     }
-
-    console.log('Google Maps scraping job:', payload)
-    toast.success('Google Maps scraping job created successfully!')
-
-    // Navigate back to scraper page or jobs list
-    setTimeout(() => navigate('/scraper/jobs'), 1500)
   }
 
   return (
@@ -66,12 +79,21 @@ export default function GoogleMapsScraper() {
         </div>
       </div>
 
-      {/* Locations */}
+      {/* Location */}
       <div className="card-terminal p-6">
         <h3 className="text-lg font-medium text-dark-text-primary mb-4">Target Locations</h3>
-        <LocationSelector selectedIds={selectedLocationIds} onChange={setSelectedLocationIds} />
+        <div className="relative">
+          <MapPinIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-dark-text-muted" />
+          <input
+            type="text"
+            className="form-input pl-10"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            placeholder="e.g., San Francisco, CA or New York, NY or Vancouver"
+          />
+        </div>
         <p className="text-xs text-dark-text-muted mt-3">
-          Select one or more locations to search for businesses
+          Selected: <span className="text-terminal-500 font-mono">{location || '0 locations'}</span> • Select one or more locations to search for businesses
         </p>
       </div>
 
@@ -79,7 +101,7 @@ export default function GoogleMapsScraper() {
       <div className="card-terminal p-6">
         <h3 className="text-lg font-medium text-dark-text-primary mb-4">Business Search</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
+          <div className="md:col-span-2">
             <label className="form-label">
               Business Category <span className="text-red-400">*</span>
             </label>
@@ -101,21 +123,20 @@ export default function GoogleMapsScraper() {
               min={1}
               max={50}
               className="form-input"
-              value={radius}
-              onChange={e => setRadius(parseInt(e.target.value || '10', 10))}
+              value={10}
+              disabled
             />
             <p className="text-xs text-dark-text-muted mt-1">
               How far from the location to search (1-50 miles)
             </p>
           </div>
 
-          <div className="md:col-span-2">
+          <div>
             <label className="form-label">Additional Keywords (optional)</label>
             <input
               className="form-input"
-              value={keywords}
-              onChange={e => setKeywords(e.target.value)}
               placeholder="luxury, affordable, 24/7, emergency"
+              disabled
             />
             <p className="text-xs text-dark-text-muted mt-1">
               Comma-separated keywords to refine your search
@@ -127,54 +148,58 @@ export default function GoogleMapsScraper() {
       {/* Scraping Settings */}
       <div className="card-terminal p-6">
         <h3 className="text-lg font-medium text-dark-text-primary mb-4">Scraping Settings</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="form-label">Max Results per Location</label>
+            <label className="form-label">Max Results</label>
             <input
               type="number"
-              min={10}
-              max={500}
-              step={10}
+              min={5}
+              max={100}
+              step={5}
               className="form-input"
               value={maxResults}
-              onChange={e => setMaxResults(parseInt(e.target.value || '50', 10))}
+              onChange={e => setMaxResults(parseInt(e.target.value || '20', 10))}
             />
             <p className="text-xs text-dark-text-muted mt-1">
-              Maximum businesses to scrape per location
+              Maximum businesses to scrape (5-100, recommended: 20)
             </p>
           </div>
 
           <div>
-            <label className="form-label">Priority</label>
-            <select
-              className="form-input"
-              value={priority}
-              onChange={e => setPriority(e.target.value as any)}
-            >
-              <option value="low">Low</option>
-              <option value="normal">Normal</option>
-              <option value="high">High</option>
-            </select>
-            <p className="text-xs text-dark-text-muted mt-1">
-              Job queue priority
-            </p>
-          </div>
-
-          <div>
-            <label className="form-label">Contact Enrichment</label>
+            <label className="form-label">Scraping Method</label>
             <label className="flex items-center gap-3 p-3 bg-dark-border/30 rounded-md cursor-pointer hover:bg-dark-border/50 transition-colors">
               <input
                 type="checkbox"
-                checked={enableEnrichment}
-                onChange={e => setEnableEnrichment(e.target.checked)}
+                checked={usePlacesAPI}
+                onChange={e => setUsePlacesAPI(e.target.checked)}
                 className="w-4 h-4"
               />
               <div>
                 <div className="text-sm font-medium text-dark-text-primary">
-                  Enable enrichment
+                  Use Google Places API
                 </div>
                 <div className="text-xs text-dark-text-muted">
-                  Find emails & phone numbers
+                  Official Google API - Most reliable (recommended)
+                </div>
+              </div>
+            </label>
+          </div>
+
+          <div className="md:col-span-2">
+            <label className="form-label">Email Extraction</label>
+            <label className="flex items-center gap-3 p-3 bg-dark-border/30 rounded-md cursor-pointer hover:bg-dark-border/50 transition-colors">
+              <input
+                type="checkbox"
+                checked={extractEmails}
+                onChange={e => setExtractEmails(e.target.checked)}
+                className="w-4 h-4"
+              />
+              <div>
+                <div className="text-sm font-medium text-dark-text-primary">
+                  Extract emails from websites
+                </div>
+                <div className="text-xs text-dark-text-muted">
+                  Visits business websites to find contact emails (~5s per business)
                 </div>
               </div>
             </label>
@@ -197,23 +222,24 @@ export default function GoogleMapsScraper() {
       <div className="sticky bottom-0 bg-dark-surface/95 backdrop-blur-sm p-6 border-t border-dark-border rounded-lg">
         <div className="flex items-center justify-between">
           <div className="text-sm text-dark-text-secondary">
-            {selectedLocationIds.length} location{selectedLocationIds.length !== 1 ? 's' : ''} selected
+            {location ? `${location}` : '0 locations selected'}
             {businessCategory && ` • ${businessCategory}`}
-            {` • Up to ${maxResults * selectedLocationIds.length} results`}
+            {` • Up to ${maxResults} results`}
           </div>
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate('/scraper')}
               className="btn-secondary"
+              disabled={isLoading}
             >
               Cancel
             </button>
             <button
               onClick={handleSubmit}
-              disabled={selectedLocationIds.length === 0 || !businessCategory.trim()}
+              disabled={!location.trim() || !businessCategory.trim() || isLoading}
               className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Start Scraping
+              {isLoading ? 'Starting...' : 'Start Scraping'}
             </button>
           </div>
         </div>

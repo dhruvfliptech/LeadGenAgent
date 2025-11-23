@@ -43,9 +43,28 @@ export default function Leads() {
       Object.entries(filters).forEach(([key, value]) => {
         if (value) params.append(key, value)
       })
-      return api.get(`/leads?${params.toString()}`).then(res => res.data)
+      const queryString = params.toString()
+      return api.get(`/leads/${queryString ? '?' + queryString : ''}`).then(res => res.data)
     },
   })
+
+  // Calculate stats
+  const stats = {
+    total: leads?.length || 0,
+    craigslist: leads?.filter(l => l.source === 'craigslist').length || 0,
+    google_maps: leads?.filter(l => l.source === 'google_maps').length || 0,
+    linkedin: leads?.filter(l => l.source === 'linkedin').length || 0,
+    job_boards: leads?.filter(l => ['indeed', 'monster', 'ziprecruiter'].includes(l.source)).length || 0
+  }
+
+  // Filter leads by source for display
+  const displayLeads = leads?.filter(lead => {
+    if (!filters.source) return true
+    if (filters.source === 'job_boards') {
+      return ['indeed', 'monster', 'ziprecruiter'].includes(lead.source)
+    }
+    return lead.source === filters.source
+  }) || []
 
   const { data: locations } = useQuery({
     queryKey: ['locations'],
@@ -289,69 +308,111 @@ export default function Leads() {
       </div>
 
       {/* Filters */}
-      <div className="card p-4">
-        <div className="flex items-center space-x-4">
-          <FunnelIcon className="h-5 w-5 text-gray-400" />
-          <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
-            <select
-              value={filters.source}
-              onChange={(e) => setFilters(prev => ({ ...prev, source: e.target.value as LeadSource | '' }))}
-              className="form-input"
-            >
-              <option value="">All Sources</option>
-              <option value="craigslist">Craigslist</option>
-              <option value="google_maps">Google Maps</option>
-              <option value="linkedin">LinkedIn</option>
-              <option value="indeed">Indeed</option>
-              <option value="monster">Monster</option>
-              <option value="ziprecruiter">ZipRecruiter</option>
-            </select>
+      <div className="space-y-4">
+        {/* Source Tabs */}
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setFilters(prev => ({ ...prev, source: '' }))}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+              !filters.source
+                ? 'bg-primary-100 text-primary-800 border border-primary-200'
+                : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+            }`}
+          >
+            All Sources ({stats.total})
+          </button>
+          <button
+            onClick={() => setFilters(prev => ({ ...prev, source: 'craigslist' }))}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+              filters.source === 'craigslist'
+                ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+            }`}
+          >
+            📍 Craigslist ({stats.craigslist})
+          </button>
+          <button
+            onClick={() => setFilters(prev => ({ ...prev, source: 'google_maps' }))}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+              filters.source === 'google_maps'
+                ? 'bg-green-100 text-green-800 border border-green-200'
+                : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+            }`}
+          >
+            🗺️ Google Maps ({stats.google_maps})
+          </button>
+          <button
+            onClick={() => setFilters(prev => ({ ...prev, source: 'linkedin' }))}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+              filters.source === 'linkedin'
+                ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+            }`}
+          >
+            💼 LinkedIn ({stats.linkedin})
+          </button>
+          <button
+            onClick={() => setFilters(prev => ({ ...prev, source: 'job_boards' }))}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+              filters.source === 'job_boards'
+                ? 'bg-orange-100 text-orange-800 border border-orange-200'
+                : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+            }`}
+          >
+            🔍 Job Boards ({stats.job_boards})
+          </button>
+        </div>
 
-            <select
-              value={filters.status}
-              onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
-              className="form-input"
-            >
-              <option value="">All Statuses</option>
-              <option value="new">New</option>
-              <option value="contacted">Contacted</option>
-              <option value="qualified">Qualified</option>
-              <option value="converted">Converted</option>
-              <option value="rejected">Rejected</option>
-            </select>
+        <div className="card p-4">
+          <div className="flex items-center space-x-4">
+            <FunnelIcon className="h-5 w-5 text-gray-400" />
+            <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              <select
+                value={filters.status}
+                onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
+                className="form-input"
+              >
+                <option value="">All Statuses</option>
+                <option value="new">New</option>
+                <option value="contacted">Contacted</option>
+                <option value="qualified">Qualified</option>
+                <option value="converted">Converted</option>
+                <option value="rejected">Rejected</option>
+              </select>
 
-            <select
-              value={filters.location_id}
-              onChange={(e) => setFilters(prev => ({ ...prev, location_id: e.target.value }))}
-              className="form-input"
-            >
-              <option value="">All Locations</option>
-              {locations?.map((location: any) => (
-                <option key={location.id} value={location.id}>
-                  {location.name}
-                </option>
-              ))}
-            </select>
+              <select
+                value={filters.location_id}
+                onChange={(e) => setFilters(prev => ({ ...prev, location_id: e.target.value }))}
+                className="form-input"
+              >
+                <option value="">All Locations</option>
+                {locations?.map((location: any) => (
+                  <option key={location.id} value={location.id}>
+                    {location.name}
+                  </option>
+                ))}
+              </select>
 
-            <select
-              value={filters.is_processed}
-              onChange={(e) => setFilters(prev => ({ ...prev, is_processed: e.target.value }))}
-              className="form-input"
-            >
-              <option value="">Processing Status</option>
-              <option value="true">Processed</option>
-              <option value="false">Unprocessed</option>
-            </select>
+              <select
+                value={filters.is_processed}
+                onChange={(e) => setFilters(prev => ({ ...prev, is_processed: e.target.value }))}
+                className="form-input"
+              >
+                <option value="">Processing Status</option>
+                <option value="true">Processed</option>
+                <option value="false">Unprocessed</option>
+              </select>
 
-            <select
-              value={filters.is_contacted}
-              onChange={(e) => setFilters(prev => ({ ...prev, is_contacted: e.target.value }))}
-              className="form-input"
-            >
-              <option value="">Contact Status</option>
-              <option value="true">Contacted</option>
-              <option value="false">Not Contacted</option>
-            </select>
+              <select
+                value={filters.is_contacted}
+                onChange={(e) => setFilters(prev => ({ ...prev, is_contacted: e.target.value }))}
+                className="form-input"
+              >
+                <option value="">Contact Status</option>
+                <option value="true">Contacted</option>
+                <option value="false">Not Contacted</option>
+              </select>
+            </div>
           </div>
         </div>
       </div>
@@ -370,7 +431,7 @@ export default function Leads() {
             ))}
           </div>
         </div>
-      ) : leads && leads.length > 0 ? (
+      ) : displayLeads.length > 0 ? (
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
@@ -400,7 +461,7 @@ export default function Leads() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {leads.map((lead) => {
+                {displayLeads.map((lead) => {
                   const scorePct = Math.round(((lead.qualification_score ?? 0) * 100))
                   const scoreClass = scorePct >= 70
                     ? 'bg-green-100 text-green-800'

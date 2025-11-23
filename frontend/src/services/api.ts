@@ -83,6 +83,35 @@ api.interceptors.response.use(
   }
 )
 
+// Google Maps Scraper API
+export const googleMapsApi = {
+  // Start a Google Maps scraping job
+  startScrape: (data: {
+    query: string
+    location: string
+    max_results?: number
+    extract_emails?: boolean
+    use_places_api?: boolean
+    location_id?: number
+  }) => api.post('/google-maps/scrape', data),
+
+  // Get job status
+  getJobStatus: (jobId: string, includeResults: boolean = false) =>
+    api.get(`/google-maps/status/${jobId}`, {
+      params: { include_results: includeResults }
+    }),
+
+  // List all jobs
+  listJobs: (status?: string, limit: number = 50) =>
+    api.get('/google-maps/jobs', {
+      params: { status, limit }
+    }),
+
+  // Delete a job
+  deleteJob: (jobId: string) =>
+    api.delete(`/google-maps/jobs/${jobId}`),
+}
+
 // Workflow Approvals API for n8n integration
 export const workflowApprovalsApi = {
   // Get pending approvals
