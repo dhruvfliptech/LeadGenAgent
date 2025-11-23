@@ -1,0 +1,28 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+[env]
+# Database will be automatically provided by Railway PostgreSQL addon
+# Redis will be automatically provided by Railway Redis addon
+ENVIRONMENT = "production"
+DEBUG = "false"
+API_V1_STR = "/api/v1"
+PROJECT_NAME = "Craigslist Lead Generation"
+VERSION = "1.0.0"
+ALLOWED_HOSTS = '["*"]'
+SCRAPER_DELAY_MIN = "2.0"
+SCRAPER_DELAY_MAX = "5.0"
+SCRAPER_CONCURRENT_LIMIT = "3"
+RATE_LIMIT_PER_MINUTE = "30"
+LOG_LEVEL = "INFO"
+
+# Generate this with: openssl rand -hex 32
+SECRET_KEY = "your-secret-key-here"
+
+# Frontend build settings
+VITE_API_URL = "https://your-backend-url.railway.app"

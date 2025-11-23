@@ -1,0 +1,75 @@
+# Render Blueprint Configuration
+# This file defines the infrastructure for deploying on Render
+
+services:
+  # Backend API Service
+  - type: web
+    name: craigslist-leads-api
+    env: python
+    plan: starter
+    buildCommand: "cd backend && pip install -r requirements.txt"
+    startCommand: "cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    healthCheckPath: /health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DEBUG
+        value: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: craigslist-leads-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: craigslist-leads-redis
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: API_V1_STR
+        value: /api/v1
+      - key: PROJECT_NAME
+        value: Craigslist Lead Generation
+      - key: VERSION
+        value: 1.0.0
+      - key: ALLOWED_HOSTS
+        value: '["*"]'
+      - key: SCRAPER_DELAY_MIN
+        value: 2.0
+      - key: SCRAPER_DELAY_MAX
+        value: 5.0
+      - key: SCRAPER_CONCURRENT_LIMIT
+        value: 3
+      - key: RATE_LIMIT_PER_MINUTE
+        value: 30
+      - key: LOG_LEVEL
+        value: INFO
+
+  # Frontend Service
+  - type: web
+    name: craigslist-leads-frontend
+    env: static
+    plan: starter
+    buildCommand: "cd frontend && npm ci && npm run build"
+    staticPublishPath: frontend/dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          name: craigslist-leads-api
+          type: web
+          property: host
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+databases:
+  # PostgreSQL Database
+  - name: craigslist-leads-db
+    plan: starter
+    databaseName: craigslist_leads
+    user: postgres
+
+  # Redis Instance
+  - name: craigslist-leads-redis
+    plan: starter

@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Approval Required</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .header p {
+            margin: 10px 0 0;
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        .content {
+            padding: 30px;
+        }
+        .approval-type {
+            background-color: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+        .approval-type strong {
+            color: #667eea;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .detail-item {
+            padding: 12px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        .detail-item strong {
+            display: block;
+            color: #666;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        .detail-item span {
+            color: #333;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .preview-section {
+            margin: 25px 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .preview-section a {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #667eea;
+            color: #ffffff;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: 500;
+            transition: background-color 0.3s;
+        }
+        .preview-section a:hover {
+            background-color: #5568d3;
+        }
+        .actions {
+            margin: 30px 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .actions h3 {
+            margin: 0 0 20px;
+            color: #333;
+            font-size: 16px;
+        }
+        .button {
+            display: inline-block;
+            padding: 14px 32px;
+            margin: 0 8px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 15px;
+            transition: all 0.3s;
+        }
+        .button-approve {
+            background-color: #10b981;
+            color: #ffffff;
+        }
+        .button-approve:hover {
+            background-color: #059669;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+        }
+        .button-reject {
+            background-color: #ef4444;
+            color: #ffffff;
+        }
+        .button-reject:hover {
+            background-color: #dc2626;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
+        }
+        .timeout-warning {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            border-radius: 4px;
+        }
+        .timeout-warning p {
+            margin: 0;
+            color: #92400e;
+            font-size: 14px;
+        }
+        .timeout-warning strong {
+            color: #b45309;
+        }
+        .footer {
+            padding: 20px 30px;
+            background-color: #f8f9fa;
+            border-top: 1px solid #e5e7eb;
+            text-align: center;
+        }
+        .footer p {
+            margin: 5px 0;
+            color: #6b7280;
+            font-size: 13px;
+        }
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        @media only screen and (max-width: 600px) {
+            .container {
+                margin: 0;
+                border-radius: 0;
+            }
+            .details-grid {
+                grid-template-columns: 1fr;
+            }
+            .button {
+                display: block;
+                margin: 10px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔔 Approval Required</h1>
+            <p>Action needed on your workflow</p>
+        </div>
+
+        <div class="content">
+            <div class="approval-type">
+                <strong>{{ approval_type | replace('_', ' ') | title }}</strong>
+            </div>
+
+            <p>A new item requires your review and approval before the workflow can proceed.</p>
+
+            <div class="details-grid">
+                {% if business_name %}
+                <div class="detail-item">
+                    <strong>Business</strong>
+                    <span>{{ business_name }}</span>
+                </div>
+                {% endif %}
+
+                {% if category %}
+                <div class="detail-item">
+                    <strong>Category</strong>
+                    <span>{{ category }}</span>
+                </div>
+                {% endif %}
+
+                <div class="detail-item">
+                    <strong>Approval ID</strong>
+                    <span>#{{ approval_id }}</span>
+                </div>
+
+                <div class="detail-item">
+                    <strong>Created</strong>
+                    <span>{{ created_at }}</span>
+                </div>
+
+                {% if quality_score %}
+                <div class="detail-item">
+                    <strong>Quality Score</strong>
+                    <span>{{ quality_score }}%</span>
+                </div>
+                {% endif %}
+
+                {% if qualification_score %}
+                <div class="detail-item">
+                    <strong>Qualification Score</strong>
+                    <span>{{ qualification_score }}%</span>
+                </div>
+                {% endif %}
+            </div>
+
+            {% if description %}
+            <div style="margin: 20px 0;">
+                <strong style="display: block; margin-bottom: 8px; color: #666;">Description:</strong>
+                <p style="margin: 0; color: #555; line-height: 1.6;">{{ description }}</p>
+            </div>
+            {% endif %}
+
+            {% if preview_url %}
+            <div class="preview-section">
+                <h3 style="margin: 0 0 15px; color: #333; font-size: 16px;">Preview Available</h3>
+                <a href="{{ preview_url }}" target="_blank">🔍 View {{ resource_type | default('Resource') }}</a>
+            </div>
+            {% endif %}
+
+            <div class="actions">
+                <h3>Take Action</h3>
+                <a href="{{ approve_url }}" class="button button-approve">
+                    ✅ Approve
+                </a>
+                <a href="{{ reject_url }}" class="button button-reject">
+                    ❌ Reject
+                </a>
+            </div>
+
+            {% if timeout_minutes %}
+            <div class="timeout-warning">
+                <p>
+                    <strong>⏱️ Timeout Notice:</strong> This approval will automatically expire in
+                    <strong>{{ timeout_minutes }} minutes</strong> ({{ timeout_at }}).
+                </p>
+            </div>
+            {% endif %}
+
+            <p style="margin: 25px 0 0; color: #6b7280; font-size: 14px; text-align: center;">
+                You can also review this approval in the
+                <a href="{{ dashboard_url | default('http://localhost:3000/approvals') }}" style="color: #667eea;">approval dashboard</a>.
+            </p>
+        </div>
+
+        <div class="footer">
+            <p><strong>Craigslist Lead Generation System</strong></p>
+            <p>Automated Workflow Approval System</p>
+            <p style="margin-top: 10px;">
+                <a href="{{ unsubscribe_url | default('#') }}">Notification Preferences</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

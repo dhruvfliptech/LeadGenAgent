@@ -1,0 +1,147 @@
+# Netlify Configuration for CraigLeads Pro
+# Production-ready deployment configuration with security, performance, and SPA routing
+
+[build]
+  # Build command - runs TypeScript compilation and Vite build
+  command = "npm run build"
+
+  # Publish directory - Vite outputs to 'dist' by default
+  publish = "dist"
+
+  # Base directory for build (leave empty if netlify.toml is in frontend/)
+  base = ""
+
+[build.environment]
+  # Node version for build
+  NODE_VERSION = "18"
+
+  # Enable CI mode for consistent builds
+  CI = "true"
+
+  # NPM version (optional)
+  NPM_VERSION = "9.6.7"
+
+# Production context (main branch)
+[context.production]
+  command = "npm run build"
+
+  [context.production.environment]
+    # Production environment variables
+    # Set actual values in Netlify dashboard: Site settings > Environment variables
+    NODE_ENV = "production"
+
+# Deploy preview context (pull requests)
+[context.deploy-preview]
+  command = "npm run build"
+
+  [context.deploy-preview.environment]
+    NODE_ENV = "production"
+
+# Branch deploy context
+[context.branch-deploy]
+  command = "npm run build"
+
+# Development branch context (if using staging branch)
+[context.development]
+  command = "npm run build"
+
+  [context.development.environment]
+    NODE_ENV = "development"
+
+# SPA routing - redirect all requests to index.html
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+  force = false
+
+# API proxy to backend (optional - use if backend is on different domain)
+# Uncomment and configure based on your backend deployment
+# [[redirects]]
+#   from = "/api/*"
+#   to = "https://your-backend-api.railway.app/api/:splat"
+#   status = 200
+#   force = true
+#   headers = {X-From = "Netlify"}
+
+# WebSocket proxy (if using same domain)
+# [[redirects]]
+#   from = "/ws"
+#   to = "wss://your-backend-api.railway.app/ws"
+#   status = 200
+#   force = true
+
+# Security headers
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Security headers
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+    # HSTS - enforce HTTPS (max-age = 1 year)
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+
+    # Content Security Policy - adjust based on your needs
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.railway.app https://*.render.com wss://*.railway.app wss://*.render.com; frame-ancestors 'none';"
+
+# Cache static assets for 1 year
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Cache fonts
+[[headers]]
+  for = "/fonts/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# Don't cache service worker
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+# Don't cache index.html
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+# Plugin configuration
+[[plugins]]
+  # Automatically compress files
+  package = "@netlify/plugin-lighthouse"
+
+  # Lighthouse plugin for performance monitoring (optional)
+  # [plugins.inputs.thresholds]
+  #   performance = 0.9
+  #   accessibility = 0.9
+  #   best-practices = 0.9
+  #   seo = 0.9
+
+# Functions configuration (if using Netlify Functions)
+[functions]
+  # Directory for serverless functions (optional)
+  directory = "netlify/functions"
+
+  # Node bundler (esbuild is faster)
+  node_bundler = "esbuild"
+
+# Deploy notifications (optional)
+# [build.processing]
+#   skip_processing = false
+# [build.processing.css]
+#   bundle = true
+#   minify = true
+# [build.processing.js]
+#   bundle = true
+#   minify = true
+# [build.processing.html]
+#   pretty_urls = true
+# [build.processing.images]
+#   compress = true

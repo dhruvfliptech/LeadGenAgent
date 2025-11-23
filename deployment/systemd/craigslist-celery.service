@@ -1,0 +1,49 @@
+[Unit]
+Description=Craigslist Lead Generation Celery Worker
+After=network.target redis.service postgresql.service
+Wants=redis.service postgresql.service
+
+[Service]
+Type=forking
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/craigslist-leads/backend
+
+# Environment
+Environment="PATH=/var/www/craigslist-leads/backend/venv/bin"
+EnvironmentFile=/var/www/craigslist-leads/.env.production
+
+# Execute service
+ExecStart=/var/www/craigslist-leads/backend/venv/bin/celery -A celery_app worker \
+    --loglevel=info \
+    --concurrency=4 \
+    --max-tasks-per-child=1000 \
+    --time-limit=600 \
+    --soft-time-limit=540 \
+    --logfile=/var/www/craigslist-leads/logs/celery-worker.log \
+    --pidfile=/var/run/celery/worker.pid
+
+# Stop service gracefully
+ExecStop=/var/www/craigslist-leads/backend/venv/bin/celery -A celery_app control shutdown
+
+# Restart policy
+Restart=always
+RestartSec=5
+StartLimitInterval=0
+
+# Resource limits
+LimitNOFILE=65535
+TimeoutStartSec=30
+TimeoutStopSec=120
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=craigslist-celery
+
+[Install]
+WantedBy=multi-user.target

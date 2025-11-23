@@ -1,0 +1,237 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  
+  body {
+    @apply bg-dark-bg text-dark-text-primary transition-colors duration-300;
+  }
+  
+  /* Scrollbar styling for dark theme */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-dark-bg;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-dark-border rounded-md;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-terminal-600;
+  }
+}
+
+@layer components {
+  /* Terminal-style buttons */
+  .btn {
+    @apply inline-flex items-center px-4 py-2 border text-sm font-medium rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-dark-bg;
+  }
+  
+  .btn-terminal {
+    @apply btn bg-dark-surface border-terminal-500 text-terminal-500 hover:bg-terminal-500/10 hover:border-terminal-400 focus:ring-terminal-500;
+  }
+  
+  .btn-terminal-solid {
+    @apply btn bg-terminal-500 border-terminal-500 text-black hover:bg-terminal-400 focus:ring-terminal-500;
+  }
+  
+  .btn-primary {
+    @apply btn-terminal-solid;
+  }
+  
+  .btn-secondary {
+    @apply btn bg-dark-surface border-dark-border text-dark-text-secondary hover:bg-dark-border hover:text-dark-text-primary focus:ring-terminal-500;
+  }
+  
+  .btn-danger {
+    @apply btn bg-red-900/20 border-red-500 text-red-400 hover:bg-red-900/40 focus:ring-red-500;
+  }
+  
+  /* Terminal-style cards */
+  .card {
+    @apply bg-dark-surface border border-dark-border rounded-lg shadow-lg backdrop-blur-sm;
+  }
+  
+  .card-terminal {
+    @apply card border-terminal-500/30 shadow-terminal-500/10;
+  }
+  
+  /* Terminal-style inputs */
+  .form-input {
+    @apply block w-full px-3 py-2 bg-dark-surface border border-dark-border rounded-md text-dark-text-primary placeholder-dark-text-muted focus:outline-none focus:ring-2 focus:ring-terminal-500 focus:border-terminal-500 transition-colors;
+  }
+  
+  .form-input-terminal {
+    @apply form-input font-mono text-terminal-400 border-terminal-500/30 focus:border-terminal-500;
+  }
+  
+  .form-label {
+    @apply block text-sm font-medium text-dark-text-secondary mb-2;
+  }
+  
+  .form-label-terminal {
+    @apply form-label text-terminal-400 font-mono;
+  }
+  
+  /* Terminal text effects */
+  .text-terminal {
+    @apply text-terminal-500 font-mono;
+  }
+  
+  .text-terminal-glow {
+    @apply text-terminal-500 font-mono;
+    text-shadow: 0 0 5px currentColor;
+  }
+  
+  /* Loading states */
+  .loading-dots::after {
+    content: '';
+    animation: terminal-blink 1s infinite;
+  }
+  
+  /* Status indicators */
+  .status-online {
+    @apply inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-terminal-900/20 text-terminal-400 border border-terminal-500/30;
+  }
+  
+  .status-offline {
+    @apply inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-900/20 text-red-400 border border-red-500/30;
+  }
+  
+  .status-warning {
+    @apply inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-900/20 text-yellow-400 border border-yellow-500/30;
+  }
+  
+  /* Data tables */
+  .table-terminal {
+    @apply w-full text-sm text-left;
+  }
+  
+  .table-terminal th {
+    @apply px-4 py-3 text-terminal-400 font-mono font-medium border-b border-dark-border bg-dark-surface;
+  }
+  
+  .table-terminal td {
+    @apply px-4 py-3 text-dark-text-primary border-b border-dark-border/50;
+  }
+  
+  .table-terminal tr:hover {
+    @apply bg-dark-border/30;
+  }
+  
+  /* Code blocks */
+  .code-block {
+    @apply bg-dark-bg border border-dark-border rounded-md p-4 font-mono text-sm text-terminal-400 overflow-x-auto;
+  }
+  
+  /* Notification styles */
+  .notification {
+    @apply p-4 rounded-md border backdrop-blur-sm;
+  }
+  
+  .notification-success {
+    @apply notification bg-terminal-900/20 border-terminal-500/30 text-terminal-400;
+  }
+  
+  .notification-error {
+    @apply notification bg-red-900/20 border-red-500/30 text-red-400;
+  }
+  
+  .notification-warning {
+    @apply notification bg-yellow-900/20 border-yellow-500/30 text-yellow-400;
+  }
+  
+  .notification-info {
+    @apply notification bg-blue-900/20 border-blue-500/30 text-blue-400;
+  }
+
+  /* Source-specific badges and colors */
+  .source-badge {
+    @apply inline-flex items-center font-medium rounded-full transition-all;
+  }
+
+  .source-badge-craigslist {
+    background-color: rgba(255, 102, 0, 0.1);
+    color: #FF6600;
+    border-color: rgba(255, 102, 0, 0.3);
+  }
+
+  .source-badge-google_maps {
+    background-color: rgba(66, 133, 244, 0.1);
+    color: #4285F4;
+    border-color: rgba(66, 133, 244, 0.3);
+  }
+
+  .source-badge-linkedin {
+    background-color: rgba(10, 102, 194, 0.1);
+    color: #0A66C2;
+    border-color: rgba(10, 102, 194, 0.3);
+  }
+
+  .source-badge-indeed {
+    background-color: rgba(37, 87, 167, 0.1);
+    color: #2557A7;
+    border-color: rgba(37, 87, 167, 0.3);
+  }
+
+  .source-badge-monster {
+    background-color: rgba(110, 72, 170, 0.1);
+    color: #6E48AA;
+    border-color: rgba(110, 72, 170, 0.3);
+  }
+
+  .source-badge-ziprecruiter {
+    background-color: rgba(28, 140, 63, 0.1);
+    color: #1C8C3F;
+    border-color: rgba(28, 140, 63, 0.3);
+  }
+
+  /* Source filter dropdown */
+  .source-filter-option {
+    @apply flex items-center gap-2 px-3 py-2 cursor-pointer transition-colors;
+  }
+
+  .source-filter-option:hover {
+    @apply bg-dark-border/50;
+  }
+
+  /* Source stats chart bars */
+  .source-stat-bar {
+    @apply h-6 rounded transition-all duration-300;
+  }
+
+  .source-stat-bar-craigslist {
+    background: linear-gradient(90deg, rgba(255, 102, 0, 0.7) 0%, rgba(255, 102, 0, 0.4) 100%);
+  }
+
+  .source-stat-bar-google_maps {
+    background: linear-gradient(90deg, rgba(66, 133, 244, 0.7) 0%, rgba(66, 133, 244, 0.4) 100%);
+  }
+
+  .source-stat-bar-linkedin {
+    background: linear-gradient(90deg, rgba(10, 102, 194, 0.7) 0%, rgba(10, 102, 194, 0.4) 100%);
+  }
+
+  .source-stat-bar-indeed {
+    background: linear-gradient(90deg, rgba(37, 87, 167, 0.7) 0%, rgba(37, 87, 167, 0.4) 100%);
+  }
+
+  .source-stat-bar-monster {
+    background: linear-gradient(90deg, rgba(110, 72, 170, 0.7) 0%, rgba(110, 72, 170, 0.4) 100%);
+  }
+
+  .source-stat-bar-ziprecruiter {
+    background: linear-gradient(90deg, rgba(28, 140, 63, 0.7) 0%, rgba(28, 140, 63, 0.4) 100%);
+  }
+}

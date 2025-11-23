@@ -1,0 +1,18 @@
+# Procfile for Railway/Heroku Deployment
+# This file tells the platform how to run your application
+
+# Web process - FastAPI application with Uvicorn
+# Uses optimized production settings
+web: uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --workers 4 --log-level info
+
+# Worker process for Celery (background tasks)
+# Uncomment if using Celery for async tasks
+# worker: celery -A celery_app worker --loglevel=info --concurrency=4
+
+# Beat process for scheduled tasks
+# Uncomment if using Celery Beat for periodic tasks
+# beat: celery -A celery_app beat --loglevel=info
+
+# Release phase (runs before deployment)
+# Uncomment to run database migrations automatically
+# release: alembic upgrade head

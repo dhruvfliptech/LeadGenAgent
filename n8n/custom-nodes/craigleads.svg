@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="60" height="60" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background Circle -->
+  <circle cx="30" cy="30" r="28" fill="#4F46E5" stroke="#312E81" stroke-width="2"/>
+
+  <!-- Letter C -->
+  <path d="M40 20C35 15 25 15 20 20C15 25 15 35 20 40C25 45 35 45 40 40"
+        stroke="#FFFFFF"
+        stroke-width="4"
+        stroke-linecap="round"
+        fill="none"/>
+
+  <!-- Lead Generation Icon (arrow pointing up-right) -->
+  <path d="M32 28L40 20M40 20H34M40 20V26"
+        stroke="#FCD34D"
+        stroke-width="3"
+        stroke-linecap="round"
+        stroke-linejoin="round"/>
+
+  <!-- Dots representing leads -->
+  <circle cx="24" cy="34" r="2" fill="#FCD34D"/>
+  <circle cx="28" cy="38" r="2" fill="#FCD34D"/>
+  <circle cx="32" cy="42" r="2" fill="#FCD34D"/>
+</svg>

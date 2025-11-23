@@ -1,0 +1,39 @@
+[Unit]
+Description=Craigslist Lead Generation Celery Beat Scheduler
+After=network.target redis.service
+Wants=redis.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/craigslist-leads/backend
+
+# Environment
+Environment="PATH=/var/www/craigslist-leads/backend/venv/bin"
+EnvironmentFile=/var/www/craigslist-leads/.env.production
+
+# Execute service
+ExecStart=/var/www/craigslist-leads/backend/venv/bin/celery -A celery_app beat \
+    --loglevel=info \
+    --logfile=/var/www/craigslist-leads/logs/celery-beat.log \
+    --pidfile=/var/run/celery/beat.pid
+
+# Restart policy
+Restart=always
+RestartSec=5
+
+# Resource limits
+LimitNOFILE=4096
+
+# Security
+NoNewPrivileges=true
+PrivateTmp=true
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=craigslist-celery-beat
+
+[Install]
+WantedBy=multi-user.target

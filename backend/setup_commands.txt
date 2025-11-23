@@ -1,0 +1,31 @@
+# Backend Setup Commands
+# Copy and paste these commands into your terminal one by one
+
+# Navigate to backend directory
+cd /Users/deepaliraithatha/Developer/craigslist-leads-full-main/backend
+
+# Step 1: Create virtual environment (may take 30-60 seconds)
+/usr/local/bin/python3 -m venv venv
+
+# Step 2: Activate virtual environment
+source venv/bin/activate
+
+# Step 3: Upgrade pip
+pip install --upgrade pip
+
+# Step 4: Install dependencies (takes 2-5 minutes)
+pip install -r requirements.txt
+
+# Step 5: Install Playwright browsers (downloads ~100MB)
+playwright install chromium
+
+# Step 6: Create environment file
+cp .env.example .env
+
+# Step 7: Edit .env file (YOU MUST DO THIS MANUALLY)
+# Open .env in a text editor and configure:
+#   - DATABASE_URL (PostgreSQL connection)
+#   - SECRET_KEY (generate with: python -c "import secrets; print(secrets.token_urlsafe(32))")
+#   - ALLOWED_HOSTS (for CORS)
+
+echo "Setup complete! Now configure your .env file before proceeding."

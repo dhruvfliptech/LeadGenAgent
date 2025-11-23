@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            color: #0f0;
+            font-family: 'Courier New', monospace;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            text-align: center;
+            padding: 40px;
+            border: 2px solid #0f0;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+        }
+        h1 {
+            font-size: 48px;
+            margin: 0 0 20px 0;
+            text-shadow: 0 0 10px #0f0;
+        }
+        .status {
+            font-size: 24px;
+            margin: 20px 0;
+        }
+        .api-test {
+            margin-top: 30px;
+            padding: 20px;
+            border: 1px solid #0f0;
+            background: rgba(0, 255, 0, 0.1);
+        }
+        button {
+            background: #0f0;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            font-size: 18px;
+            cursor: pointer;
+            margin: 10px;
+            font-family: inherit;
+        }
+        button:hover {
+            background: #0a0;
+        }
+        .error {
+            color: #f00;
+        }
+        .success {
+            color: #0f0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✅ FRONTEND IS WORKING!</h1>
+        <div class="status">
+            <p>If you can see this page, the frontend server is running.</p>
+            <p id="time"></p>
+        </div>
+        
+        <div class="api-test">
+            <h2>API Connection Test</h2>
+            <button onclick="testAPI()">Test Backend API</button>
+            <button onclick="window.location.href='http://localhost:5176'">Go to Main App</button>
+            <div id="api-result"></div>
+        </div>
+    </div>
+
+    <script>
+        // Update time
+        function updateTime() {
+            document.getElementById('time').textContent = 'Current time: ' + new Date().toLocaleTimeString();
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+
+        // Test API
+        async function testAPI() {
+            const resultDiv = document.getElementById('api-result');
+            resultDiv.innerHTML = '<p>Testing API connection...</p>';
+            
+            try {
+                const response = await fetch('http://localhost:8001/api/health');
+                const data = await response.json();
+                resultDiv.innerHTML = `
+                    <p class="success">✅ API Connected!</p>
+                    <p>Status: ${data.status}</p>
+                    <p>Response: ${JSON.stringify(data, null, 2)}</p>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <p class="error">❌ API Connection Failed</p>
+                    <p class="error">Error: ${error.message}</p>
+                    <p>Make sure backend is running on port 8001</p>
+                `;
+            }
+        }
+
+        // Auto-test API on load
+        setTimeout(testAPI, 1000);
+    </script>
+</body>
+</html>

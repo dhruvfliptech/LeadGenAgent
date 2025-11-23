@@ -1,0 +1,50 @@
+[Unit]
+Description=Craigslist Lead Generation Backend API
+After=network.target postgresql.service redis.service
+Wants=postgresql.service redis.service
+
+[Service]
+Type=notify
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/craigslist-leads/backend
+
+# Environment
+Environment="PATH=/var/www/craigslist-leads/backend/venv/bin"
+EnvironmentFile=/var/www/craigslist-leads/.env.production
+
+# Execute service
+ExecStart=/var/www/craigslist-leads/backend/venv/bin/uvicorn app.main:app \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --workers 4 \
+    --log-level info \
+    --access-log \
+    --use-colors
+
+# Restart policy
+Restart=always
+RestartSec=5
+StartLimitInterval=0
+
+# Resource limits
+LimitNOFILE=65535
+TimeoutStartSec=30
+TimeoutStopSec=30
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/www/craigslist-leads/backend/logs
+ReadWritePaths=/var/www/craigslist-leads/backend/storage
+ReadWritePaths=/var/www/craigslist-leads/backend/exports
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=craigslist-backend
+
+[Install]
+WantedBy=multi-user.target

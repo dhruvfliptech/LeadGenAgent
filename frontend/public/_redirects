@@ -1,0 +1,35 @@
+# Netlify Redirects Configuration for CraigLeads Pro
+# This file provides additional routing rules beyond netlify.toml
+
+# SPA fallback - send all routes to index.html for client-side routing
+# This is the primary rule for React Router to work correctly
+/*    /index.html   200
+
+# Optional: API Proxy Rules
+# Uncomment and configure if you want to proxy API requests through Netlify
+# This helps avoid CORS issues and provides a unified domain
+
+# Proxy all /api/* requests to your backend
+# /api/*  https://your-backend.railway.app/api/:splat  200
+
+# Proxy WebSocket connections
+# /ws  wss://your-backend.railway.app/ws  200
+
+# Optional: Custom domain redirects
+# Redirect www to non-www (or vice versa)
+# https://www.yourdomain.com/*  https://yourdomain.com/:splat  301!
+
+# Optional: Legacy URL redirects
+# If migrating from old site structure
+# /old-path  /new-path  301
+
+# Optional: External redirects
+# /docs  https://docs.yoursite.com  302
+# /blog  https://blog.yoursite.com  302
+
+# Optional: Marketing redirects
+# /signup  /register  302
+# /login   /auth/login  302
+
+# 404 handling - custom 404 page (create public/404.html if needed)
+# /*    /404.html   404
