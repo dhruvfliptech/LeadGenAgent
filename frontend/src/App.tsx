@@ -7,6 +7,7 @@ import LeadDetail from '@/pages/LeadDetail'
 import Scraper from '@/pages/Scraper'
 import ScraperNew from '@/pages/ScraperNew'
 import GoogleMapsScraper from '@/pages/GoogleMapsScraper'
+import CraigslistScraper from '@/pages/CraigslistScraper'
 import LinkedInScraper from '@/pages/LinkedInScraper'
 import AudienceBuilder from '@/pages/AudienceBuilder'
 import SocialMediaScraper from '@/pages/SocialMediaScraper'
@@ -57,6 +58,7 @@ function App() {
         <Route path="/scraper" element={<ScraperNew />} />
         <Route path="/scraper-old" element={<Scraper />} />
         <Route path="/scraper/google-maps" element={<GoogleMapsScraper />} />
+        <Route path="/scraper/craigslist" element={<CraigslistScraper />} />
         <Route path="/scraper/linkedin" element={<LinkedInScraper />} />
         <Route path="/scraper/audience-builder" element={<AudienceBuilder />} />
         <Route path="/scraper/social-media" element={<SocialMediaScraper />} />

@@ -28,11 +28,62 @@ router = APIRouter()
 scraping_jobs = {}
 
 
+def calculate_sentiment(rating: Optional[float], review_count: Optional[int]) -> dict:
+    """
+    Calculate sentiment analysis based on rating and review count.
+
+    Returns a sentiment dictionary with:
+    - sentiment: 'excellent', 'good', 'average', 'poor', 'unknown'
+    - score: normalized score 0-100
+    - confidence: 'high', 'medium', 'low' based on review count
+    - summary: human-readable summary
+    """
+    if rating is None:
+        return {
+            'sentiment': 'unknown',
+            'score': None,
+            'confidence': 'low',
+            'summary': 'No rating available'
+        }
+
+    # Determine confidence based on review count
+    if review_count is None or review_count < 5:
+        confidence = 'low'
+    elif review_count < 20:
+        confidence = 'medium'
+    else:
+        confidence = 'high'
+
+    # Calculate normalized score (0-100)
+    score = int((rating / 5.0) * 100)
+
+    # Determine sentiment category
+    if rating >= 4.5:
+        sentiment = 'excellent'
+        summary = f'Excellent reputation ({rating}/5 from {review_count or 0} reviews)'
+    elif rating >= 4.0:
+        sentiment = 'good'
+        summary = f'Good reputation ({rating}/5 from {review_count or 0} reviews)'
+    elif rating >= 3.0:
+        sentiment = 'average'
+        summary = f'Average reputation ({rating}/5 from {review_count or 0} reviews)'
+    else:
+        sentiment = 'poor'
+        summary = f'Below average ({rating}/5 from {review_count or 0} reviews)'
+
+    return {
+        'sentiment': sentiment,
+        'score': score,
+        'confidence': confidence,
+        'summary': summary
+    }
+
+
 class GoogleMapsScrapeRequest(BaseModel):
     """Request schema for Google Maps scraping."""
 
     query: str = Field(..., description="Search query (e.g., 'restaurants', 'plumbers', 'dentists')")
-    location: str = Field(..., description="Location to search in (e.g., 'San Francisco, CA', 'New York, NY')")
+    location: str = Field(..., description="Location to search in (e.g., 'San Francisco, CA', '90210', 'V6B 1A1')")
     max_results: int = Field(default=20, ge=1, le=100, description="Maximum number of results to scrape (1-100)")
     extract_emails: bool = Field(default=True, description="Whether to extract emails from business websites")
     use_places_api: bool = Field(default=False, description="Use Google Places API instead of scraping (requires API key)")
@@ -48,6 +99,7 @@ class GoogleMapsScrapeRequest(BaseModel):
     def validate_location(cls, v):
         if not v or len(v.strip()) < 2:
             raise ValueError('Location must be at least 2 characters')
+        # Accept zip codes (US: 5 digits or 5+4, Canada: A1A 1A1 format), city names, or full addresses
         return v.strip()
 
 
@@ -357,7 +409,7 @@ async def run_google_maps_scraping(
         if request.use_places_api:
             # Use Google Places API
             api_key = getattr(settings, 'GOOGLE_PLACES_API_KEY', '')
-            async with GooglePlacesAPIScraper(api_key=api_key) as scraper:
+            async with GooglePlacesAPIScraper(api_key=api_key, extract_emails=request.extract_emails) as scraper:
                 scraping_jobs[job_id]['progress']['current_action'] = 'Searching via Google Places API...'
 
                 businesses = await scraper.search_businesses(
@@ -434,7 +486,9 @@ async def run_google_maps_scraping(
                         'business_hours': business.get('business_hours'),
                         'website': business.get('website'),
                         'address': business.get('address'),
-                        'place_id': business.get('place_id')
+                        'place_id': business.get('place_id'),
+                        'email': business.get('email'),
+                        'sentiment': calculate_sentiment(business.get('rating'), business.get('review_count'))
                     },
                     scraped_at=business.get('scraped_at', datetime.now())
                 )
@@ -461,11 +515,13 @@ async def run_google_maps_scraping(
         scraping_jobs[job_id]['results'] = [
             {
                 'name': b.get('name'),
+                'address': b.get('address'),
                 'phone': b.get('phone'),
                 'email': b.get('email'),
                 'website': b.get('website'),
                 'rating': b.get('rating'),
-                'review_count': b.get('review_count')
+                'review_count': b.get('review_count'),
+                'sentiment': calculate_sentiment(b.get('rating'), b.get('review_count'))
             }
             for b in businesses
         ]

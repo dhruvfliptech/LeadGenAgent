@@ -4,6 +4,7 @@ Craigslist scraper using Playwright for reliable data extraction.
 
 import asyncio
 import re
+import random
 from typing import List, Dict, Optional
 from datetime import datetime
 import json
@@ -335,19 +336,68 @@ class CraigslistScraper:
         """
         Parse date from various Craigslist date formats.
 
-        Returns None if date cannot be parsed (rather than using datetime.now() as fallback).
-        This ensures we don't record incorrect timestamps.
+        Supports:
+        - ISO format: 2024-11-26T10:30:00
+        - Relative minutes: 14m ago, 45m ago
+        - Relative hours: 2h ago, 5h ago
+        - Short date: 11/25, 11/24 (MM/DD format, assumes current year)
+
+        Returns None if date cannot be parsed.
         """
         if not date_text:
             return None
+
+        date_text = date_text.strip()
 
         try:
             # ISO format (from datetime attribute)
             if 'T' in date_text:
                 return datetime.fromisoformat(date_text.replace('Z', '+00:00'))
 
-            # Add other known Craigslist date formats here as needed
-            # For now, if we can't parse it, return None rather than guessing
+            # Relative minutes ago (e.g., "14m ago", "45m ago")
+            minutes_match = re.match(r'^(\d+)m\s*ago$', date_text, re.IGNORECASE)
+            if minutes_match:
+                minutes = int(minutes_match.group(1))
+                from datetime import timedelta
+                return datetime.now() - timedelta(minutes=minutes)
+
+            # Relative hours ago (e.g., "2h ago", "5h ago")
+            hours_match = re.match(r'^(\d+)h\s*ago$', date_text, re.IGNORECASE)
+            if hours_match:
+                hours = int(hours_match.group(1))
+                from datetime import timedelta
+                return datetime.now() - timedelta(hours=hours)
+
+            # Relative days ago (e.g., "2d ago", "5d ago")
+            days_match = re.match(r'^(\d+)d\s*ago$', date_text, re.IGNORECASE)
+            if days_match:
+                days = int(days_match.group(1))
+                from datetime import timedelta
+                return datetime.now() - timedelta(days=days)
+
+            # Short date format MM/DD (e.g., "11/25", "11/24")
+            short_date_match = re.match(r'^(\d{1,2})/(\d{1,2})$', date_text)
+            if short_date_match:
+                month = int(short_date_match.group(1))
+                day = int(short_date_match.group(2))
+                year = datetime.now().year
+                # If the date is in the future, assume it's from last year
+                parsed_date = datetime(year, month, day)
+                if parsed_date > datetime.now():
+                    parsed_date = datetime(year - 1, month, day)
+                return parsed_date
+
+            # Full date format MM/DD/YYYY or MM/DD/YY
+            full_date_match = re.match(r'^(\d{1,2})/(\d{1,2})/(\d{2,4})$', date_text)
+            if full_date_match:
+                month = int(full_date_match.group(1))
+                day = int(full_date_match.group(2))
+                year = int(full_date_match.group(3))
+                if year < 100:
+                    year += 2000
+                return datetime(year, month, day)
+
+            # If we can't parse it, log and return None
             logger.warning(f"Unable to parse date format: {date_text}")
             return None
 
@@ -755,31 +805,128 @@ class CraigslistScraper:
         categories: Optional[List[str]] = None,
         keywords: Optional[List[str]] = None,
         max_pages: int = 5,
-        extract_emails: bool = None
+        extract_emails: bool = None,
+        extract_contact_details: bool = True
     ) -> List[Dict]:
         """
-        Scrape leads from a location with optional email extraction.
-        
+        Scrape leads from a location with optional email extraction and contact details.
+
         Args:
             location_url: Base URL for the location
             categories: List of categories to scrape
             keywords: List of keywords to search for
             max_pages: Maximum number of pages to scrape per category
-            extract_emails: Override email extraction setting for this call
-            
+            extract_emails: Override email extraction setting for this call (requires CAPTCHA API key)
+            extract_contact_details: If True, visit each listing to extract phone numbers and descriptions
+
         Returns:
-            List of lead dictionaries with email information if extraction is enabled
+            List of lead dictionaries with contact information
         """
         # Get basic leads first
         leads = await self.scrape_location(location_url, categories, keywords, max_pages)
-        
-        # Extract emails if enabled
+
+        logger.info(f"scrape_location_with_emails: Got {len(leads)} leads, extract_contact_details={extract_contact_details}")
+
+        # Extract basic contact details (phone, description) from each listing - no CAPTCHA needed
+        if extract_contact_details and leads:
+            leads = await self.extract_contact_details_from_leads(leads)
+
+        # Extract emails if enabled (requires CAPTCHA solving)
         should_extract_emails = extract_emails if extract_emails is not None else self.enable_email_extraction
-        
+
         if should_extract_emails and leads:
             leads = await self.extract_emails_from_leads(leads)
-        
+
         return leads
+
+    async def extract_contact_details_from_leads(self, leads: List[Dict]) -> List[Dict]:
+        """
+        Extract basic contact details (phone, description) from each listing page.
+        This does NOT require CAPTCHA solving - it just visits the listing pages
+        to get phone numbers from the text and description.
+
+        Args:
+            leads: List of lead dictionaries with 'url' field
+
+        Returns:
+            Updated list of leads with contact details
+        """
+        updated_leads = []
+        total = len(leads)
+
+        for i, lead in enumerate(leads):
+            try:
+                listing_url = lead.get('url')
+                if not listing_url:
+                    updated_leads.append(lead)
+                    continue
+
+                logger.info(f"Extracting contact details from listing {i+1}/{total}: {listing_url}")
+
+                # Navigate to listing page
+                await self.page.goto(listing_url, wait_until='domcontentloaded', timeout=30000)
+                await self.page.wait_for_timeout(500)  # Brief delay
+
+                # Extract description
+                description = None
+                desc_element = await self.page.query_selector('#postingbody, .userbody, section.body')
+                if desc_element:
+                    description = await desc_element.text_content()
+                    if description:
+                        description = description.strip()
+                        description = description.replace('QR Code Link to This Post', '').strip()
+
+                # Extract phone numbers from page text
+                phone = None
+                page_text = await self.page.text_content('body')
+                if page_text:
+                    phone_pattern = r'(\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4})'
+                    phone_matches = re.findall(phone_pattern, page_text)
+                    if phone_matches:
+                        phone = phone_matches[0]
+                        logger.info(f"Found phone number: {phone}")
+
+                # Look for visible email (some posters include it in description)
+                email = None
+                if page_text:
+                    email_pattern = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+                    email_matches = re.findall(email_pattern, page_text)
+                    # Filter out craigslist system emails
+                    for match in email_matches:
+                        if 'craigslist' not in match.lower() and 'reply' not in match.lower():
+                            email = match
+                            logger.info(f"Found email in text: {email}")
+                            break
+
+                # Extract compensation info
+                compensation = None
+                comp_elem = await self.page.query_selector('.attrgroup span:has-text("compensation"), p:has-text("compensation")')
+                if comp_elem:
+                    comp_text = await comp_elem.text_content()
+                    if comp_text:
+                        compensation = comp_text.replace('compensation:', '').strip()
+
+                # Update lead with extracted info
+                lead['description'] = description
+                if phone:
+                    lead['reply_phone'] = phone
+                if email:
+                    lead['email'] = email
+                if compensation:
+                    lead['compensation'] = compensation
+
+                updated_leads.append(lead)
+
+                # Rate limiting delay
+                await self.page.wait_for_timeout(random.randint(500, 1500))
+
+            except Exception as e:
+                logger.warning(f"Error extracting contact details from {lead.get('url')}: {str(e)}")
+                updated_leads.append(lead)
+                continue
+
+        logger.info(f"Extracted contact details from {len(updated_leads)} leads")
+        return updated_leads
     
     def get_captcha_cost(self) -> float:
         """

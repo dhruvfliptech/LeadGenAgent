@@ -435,6 +435,11 @@ class GoogleMapsScraper:
             # Get Google Maps URL
             business_data['google_maps_url'] = page.url
 
+            # Extract email from website if enabled
+            if self.enable_email_extraction and business_data.get('website'):
+                email = await self._extract_email_from_website(business_data['website'])
+                business_data['email'] = email
+
             # Only return if we have at least a name
             if business_data.get('name'):
                 return business_data
@@ -585,16 +590,18 @@ class GooglePlacesAPIScraper:
     - Total: ~$0.049 per business with full details
     """
 
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str, extract_emails: bool = True):
         """
         Initialize the Google Places API scraper.
 
         Args:
             api_key: Google Cloud API key with Places API enabled
+            extract_emails: Whether to extract emails from business websites
         """
         self.api_key = api_key
         self.base_url = "https://maps.googleapis.com/maps/api/place"
         self.session = None
+        self.extract_emails = extract_emails
 
     async def __aenter__(self):
         """Async context manager entry."""
@@ -654,7 +661,7 @@ class GooglePlacesAPIScraper:
                 # Get place details
                 details = await self._get_place_details(place_id)
                 if details:
-                    business_data = self._parse_place_details(result, details)
+                    business_data = await self._parse_place_details(result, details)
                     businesses.append(business_data)
 
                 # Small delay to avoid rate limits
@@ -688,7 +695,7 @@ class GooglePlacesAPIScraper:
             logger.error(f"Error getting place details: {str(e)}")
             return None
 
-    def _parse_place_details(self, search_result: Dict, details: Dict) -> Dict:
+    async def _parse_place_details(self, search_result: Dict, details: Dict) -> Dict:
         """Parse place details into standard format."""
         geometry = details.get('geometry', {})
         location = geometry.get('location', {})
@@ -698,11 +705,19 @@ class GooglePlacesAPIScraper:
         if opening_hours.get('weekday_text'):
             hours = {'weekday_text': opening_hours['weekday_text']}
 
+        website = details.get('website')
+        email = None
+
+        # Extract email from website if enabled and website exists
+        if self.extract_emails and website:
+            email = await self._extract_email_from_website(website)
+
         return {
             'name': details.get('name'),
             'address': details.get('formatted_address'),
             'phone': details.get('formatted_phone_number'),
-            'website': details.get('website'),
+            'website': website,
+            'email': email,
             'rating': details.get('rating'),
             'review_count': details.get('user_ratings_total'),
             'category': details.get('types', [None])[0] if details.get('types') else None,
@@ -714,3 +729,97 @@ class GooglePlacesAPIScraper:
             'scraped_at': datetime.now(),
             'source': 'google_places_api'
         }
+
+    async def _extract_email_from_website(self, website_url: str) -> Optional[str]:
+        """
+        Visit business website and extract email address.
+
+        Args:
+            website_url: URL of the business website
+
+        Returns:
+            Email address if found, None otherwise
+        """
+        try:
+            logger.info(f"Extracting email from website: {website_url}")
+
+            # Fetch homepage
+            response = await self.session.get(website_url, timeout=10.0, follow_redirects=True)
+            content = response.text
+
+            email = self._find_email_in_html(content)
+            if email:
+                logger.info(f"Found email on homepage: {email}")
+                return email
+
+            # Try contact page
+            contact_paths = ['/contact', '/contact-us', '/about', '/about-us']
+            for path in contact_paths:
+                try:
+                    contact_url = website_url.rstrip('/') + path
+                    response = await self.session.get(contact_url, timeout=8.0, follow_redirects=True)
+                    content = response.text
+
+                    email = self._find_email_in_html(content)
+                    if email:
+                        logger.info(f"Found email on {path}: {email}")
+                        return email
+
+                except Exception:
+                    continue
+
+            return None
+
+        except Exception as e:
+            logger.warning(f"Error extracting email from {website_url}: {str(e)}")
+            return None
+
+    def _find_email_in_html(self, html_content: str) -> Optional[str]:
+        """
+        Find email address in HTML content.
+
+        Args:
+            html_content: HTML content as string
+
+        Returns:
+            Email address if found, None otherwise
+        """
+        try:
+            email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+            emails = re.findall(email_pattern, html_content)
+
+            if not emails:
+                return None
+
+            # Filter out common invalid emails
+            filtered_emails = []
+            for email in emails:
+                email_lower = email.lower()
+
+                if any(pattern in email_lower for pattern in [
+                    'noreply@', 'no-reply@', 'example.com', 'test.com',
+                    'localhost', 'domain.com', 'email.com', 'wixpress.com',
+                    'sentry.io', 'google.com', 'facebook.com', 'twitter.com',
+                    'linkedin.com', 'instagram.com', 'youtube.com', '.png',
+                    '.jpg', '.gif', '.svg', 'schema.org', 'w3.org'
+                ]):
+                    continue
+
+                filtered_emails.append(email)
+
+            if not filtered_emails:
+                return None
+
+            # Prioritize contact emails
+            priority_prefixes = ['info@', 'contact@', 'sales@', 'hello@', 'support@', 'enquiries@', 'inquiries@']
+            for prefix in priority_prefixes:
+                for email in filtered_emails:
+                    if email.lower().startswith(prefix):
+                        return email
+
+            # Return first valid email
+            return filtered_emails[0]
+
+        except Exception as e:
+            logger.warning(f"Error finding email in HTML: {str(e)}")
+            return None

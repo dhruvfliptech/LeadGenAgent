@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import {
@@ -8,12 +8,12 @@ import {
   FunnelIcon,
   ChevronDownIcon,
   ChevronRightIcon,
-  BoltIcon,
   SparklesIcon,
   PaperAirplaneIcon,
   StarIcon,
   HandThumbUpIcon,
-  HandThumbDownIcon
+  HandThumbDownIcon,
+  GlobeAltIcon
 } from '@heroicons/react/24/outline'
 import { HandThumbUpIcon as HandThumbUpSolidIcon, HandThumbDownIcon as HandThumbDownSolidIcon } from '@heroicons/react/24/solid'
 import { api } from '@/services/api'
@@ -441,16 +441,16 @@ export default function Leads() {
                     Lead
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    AI Score
+                    Sentiment
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Contact Details
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Location
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Contact
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Scraped
@@ -462,22 +462,25 @@ export default function Leads() {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {displayLeads.map((lead) => {
-                  const scorePct = Math.round(((lead.qualification_score ?? 0) * 100))
-                  const scoreClass = scorePct >= 70
-                    ? 'bg-green-100 text-green-800'
-                    : scorePct >= 40
-                    ? 'bg-yellow-100 text-yellow-800'
-                    : 'bg-red-100 text-red-800'
+                  // Get sentiment from source_metadata for Google Maps leads
+                  const sentiment = lead.source_metadata?.sentiment
+                  const rating = lead.source_metadata?.rating
+                  const reviewCount = lead.source_metadata?.review_count
+                  const website = lead.source_metadata?.website
+                  const phone = lead.phone || lead.reply_phone
+                  const email = lead.email || lead.reply_email || lead.source_metadata?.email
+                  const address = lead.source_metadata?.address || lead.neighborhood
+
                   return (
-                    <>
-                      <tr key={lead.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
+                    <React.Fragment key={lead.id}>
+                      <tr className="hover:bg-gray-50">
+                        <td className="px-6 py-4">
                           <div className="flex items-start gap-2">
                             <button onClick={() => toggleExpanded(lead.id)} className="mt-0.5 text-gray-500 hover:text-gray-700">
                               {expanded[lead.id] ? <ChevronDownIcon className="w-4 h-4" /> : <ChevronRightIcon className="w-4 h-4" />}
                             </button>
                             <div className="flex flex-col gap-1">
-                              <div className="text-sm font-medium text-gray-900 truncate max-w-xs">
+                              <div className="text-sm font-medium text-gray-900 max-w-xs">
                                 {lead.title}
                               </div>
                               <div className="flex items-center gap-2 flex-wrap">
@@ -491,13 +494,67 @@ export default function Leads() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className={`px-2 py-1 rounded text-sm font-medium inline-flex items-center gap-1 ${scoreClass}`}>
-                            <BoltIcon className="w-3.5 h-3.5" /> {isNaN(scorePct) ? '—' : `${scorePct}%`}
+                        <td className="px-6 py-4">
+                          {sentiment ? (
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-2">
+                                <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                  sentiment.sentiment === 'excellent' ? 'bg-green-100 text-green-800' :
+                                  sentiment.sentiment === 'good' ? 'bg-blue-100 text-blue-800' :
+                                  sentiment.sentiment === 'average' ? 'bg-yellow-100 text-yellow-800' :
+                                  sentiment.sentiment === 'poor' ? 'bg-red-100 text-red-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }`}>
+                                  {sentiment.sentiment?.toUpperCase()}
+                                </span>
+                                {sentiment.score !== null && (
+                                  <span className="text-xs text-gray-500">{sentiment.score}/100</span>
+                                )}
+                              </div>
+                              {rating && (
+                                <div className="flex items-center gap-1 text-xs text-gray-500">
+                                  <StarIcon className="w-3 h-3 text-yellow-500" />
+                                  <span>{rating}</span>
+                                  {reviewCount && <span>({reviewCount})</span>}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-gray-400">—</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex flex-col gap-1 text-sm max-w-xs">
+                            {phone && (
+                              <a href={`tel:${phone}`} className="flex items-center gap-1.5 text-gray-700 hover:text-green-600">
+                                <PhoneIcon className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+                                <span className="truncate">{phone}</span>
+                              </a>
+                            )}
+                            {email && (
+                              <a href={`mailto:${email}`} className="flex items-center gap-1.5 text-gray-700 hover:text-blue-600">
+                                <EnvelopeIcon className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
+                                <span className="truncate">{email}</span>
+                              </a>
+                            )}
+                            {website && (
+                              <a href={website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-gray-700 hover:text-purple-600">
+                                <GlobeAltIcon className="w-3.5 h-3.5 text-purple-500 flex-shrink-0" />
+                                <span className="truncate">{(() => { try { return new URL(website).hostname } catch { return website.slice(0, 30) } })()}</span>
+                              </a>
+                            )}
+                            {!phone && !email && !website && (
+                              <span className="text-xs text-gray-400">No contact info</span>
+                            )}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-6 py-4">
                           <div className="text-sm text-gray-900">{lead.location.name}</div>
+                          {address && (
+                            <div className="text-xs text-gray-500 truncate max-w-[150px]" title={address}>
+                              {address}
+                            </div>
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center space-x-2">
@@ -510,19 +567,6 @@ export default function Leads() {
                                 <div className="w-2 h-2 bg-blue-400 rounded-full" title="Contacted" />
                               )}
                             </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center space-x-2">
-                            {lead.phone && (
-                              <PhoneIcon className="w-4 h-4 text-green-500" />
-                            )}
-                            {lead.email && (
-                              <EnvelopeIcon className="w-4 h-4 text-blue-500" />
-                            )}
-                            {!lead.phone && !lead.email && (
-                              <span className="text-xs text-gray-400">No contact info</span>
-                            )}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -649,6 +693,32 @@ export default function Leads() {
                                   {/* Google Maps specific */}
                                   {lead.source === 'google_maps' && (
                                     <>
+                                      {/* Website */}
+                                      {lead.source_metadata.website && (
+                                        <div className="flex items-center gap-2 text-gray-600">
+                                          <span className="text-blue-500">🌐</span>
+                                          <a href={lead.source_metadata.website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline truncate max-w-xs">
+                                            {lead.source_metadata.website}
+                                          </a>
+                                        </div>
+                                      )}
+                                      {/* Email */}
+                                      {lead.source_metadata.email && (
+                                        <div className="flex items-center gap-2 text-gray-600">
+                                          <EnvelopeIcon className="w-4 h-4 text-blue-500" />
+                                          <a href={`mailto:${lead.source_metadata.email}`} className="text-blue-600 hover:underline">
+                                            {lead.source_metadata.email}
+                                          </a>
+                                        </div>
+                                      )}
+                                      {/* Address */}
+                                      {lead.source_metadata.address && (
+                                        <div className="flex items-center gap-2 text-gray-600 col-span-2">
+                                          <span className="text-red-500">📍</span>
+                                          <span>{lead.source_metadata.address}</span>
+                                        </div>
+                                      )}
+                                      {/* Rating & Sentiment */}
                                       {lead.source_metadata.rating && (
                                         <div className="flex items-center gap-2 text-gray-600">
                                           <StarIcon className="w-4 h-4 text-yellow-500" />
@@ -656,6 +726,50 @@ export default function Leads() {
                                           {lead.source_metadata.review_count && (
                                             <span className="text-gray-500">({lead.source_metadata.review_count} reviews)</span>
                                           )}
+                                        </div>
+                                      )}
+                                      {/* Sentiment Analysis */}
+                                      {lead.source_metadata.sentiment && (
+                                        <div className="col-span-2 md:col-span-3 bg-gray-100 rounded-lg p-3">
+                                          <div className="flex items-center gap-3 mb-2">
+                                            <span className="text-sm font-medium text-gray-700">Sentiment Analysis</span>
+                                            <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                              lead.source_metadata.sentiment.sentiment === 'excellent' ? 'bg-green-100 text-green-800' :
+                                              lead.source_metadata.sentiment.sentiment === 'good' ? 'bg-blue-100 text-blue-800' :
+                                              lead.source_metadata.sentiment.sentiment === 'average' ? 'bg-yellow-100 text-yellow-800' :
+                                              lead.source_metadata.sentiment.sentiment === 'poor' ? 'bg-red-100 text-red-800' :
+                                              'bg-gray-100 text-gray-800'
+                                            }`}>
+                                              {lead.source_metadata.sentiment.sentiment?.toUpperCase()}
+                                            </span>
+                                            <span className={`px-2 py-0.5 rounded text-xs ${
+                                              lead.source_metadata.sentiment.confidence === 'high' ? 'bg-green-50 text-green-600' :
+                                              lead.source_metadata.sentiment.confidence === 'medium' ? 'bg-yellow-50 text-yellow-600' :
+                                              'bg-gray-50 text-gray-600'
+                                            }`}>
+                                              {lead.source_metadata.sentiment.confidence} confidence
+                                            </span>
+                                          </div>
+                                          <div className="flex items-center gap-4">
+                                            {lead.source_metadata.sentiment.score !== null && (
+                                              <div className="flex items-center gap-2">
+                                                <span className="text-xs text-gray-500">Score:</span>
+                                                <div className="w-24 bg-gray-200 rounded-full h-2">
+                                                  <div
+                                                    className={`h-2 rounded-full ${
+                                                      lead.source_metadata.sentiment.score >= 80 ? 'bg-green-500' :
+                                                      lead.source_metadata.sentiment.score >= 60 ? 'bg-blue-500' :
+                                                      lead.source_metadata.sentiment.score >= 40 ? 'bg-yellow-500' :
+                                                      'bg-red-500'
+                                                    }`}
+                                                    style={{ width: `${lead.source_metadata.sentiment.score}%` }}
+                                                  />
+                                                </div>
+                                                <span className="text-xs font-medium text-gray-700">{lead.source_metadata.sentiment.score}/100</span>
+                                              </div>
+                                            )}
+                                          </div>
+                                          <p className="text-xs text-gray-600 mt-2">{lead.source_metadata.sentiment.summary}</p>
                                         </div>
                                       )}
                                       {lead.source_metadata.business_category && (
@@ -768,7 +882,7 @@ export default function Leads() {
                           </td>
                         </tr>
                       )}
-                    </>
+                    </React.Fragment>
                   )
                 })}
               </tbody>

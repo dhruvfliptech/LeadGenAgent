@@ -194,14 +194,15 @@ async def get_categories(
     if not refresh:
         try:
             rc = get_redis_client()
-            cached = rc.get(cache_key)
-            if cached:
-                try:
-                    return json.loads(cached)
-                except Exception:
-                    pass
-        except HTTPException:
-            # Redis not available, skip cache
+            if rc is not None:
+                cached = rc.get(cache_key)
+                if cached:
+                    try:
+                        return json.loads(cached)
+                    except Exception:
+                        pass
+        except Exception:
+            # Redis not available or error, skip cache
             pass
 
     # Basic global fallback

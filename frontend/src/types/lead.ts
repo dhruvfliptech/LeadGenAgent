@@ -24,11 +24,15 @@ export interface SourceMetadata {
   review_count?: number
   google_maps_url?: string
   google_place_id?: string
+  place_id?: string  // Alternative key for place ID
   business_category?: string
   business_type?: string
   address_full?: string
+  address?: string  // Full address string
   neighborhood?: string
   website?: string
+  email?: string  // Extracted email from website
+  business_hours?: string  // Hours of operation string
   hours_of_operation?: string
   price_level?: number
   accepts_credit_cards?: boolean
@@ -39,6 +43,12 @@ export interface SourceMetadata {
   takeout_available?: boolean
   reservations_accepted?: boolean
   popular_times?: Record<string, string[]>
+  sentiment?: {
+    sentiment: 'excellent' | 'good' | 'average' | 'poor' | 'unknown'
+    score: number | null
+    confidence: 'high' | 'medium' | 'low'
+    summary: string
+  }
 
   // LinkedIn specific
   job_title?: string

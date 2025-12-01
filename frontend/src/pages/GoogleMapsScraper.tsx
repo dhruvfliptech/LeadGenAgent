@@ -89,11 +89,11 @@ export default function GoogleMapsScraper() {
             className="form-input pl-10"
             value={location}
             onChange={(e) => setLocation(e.target.value)}
-            placeholder="e.g., San Francisco, CA or New York, NY or Vancouver"
+            placeholder="e.g., San Francisco, CA or 90210 or V6B 1A1"
           />
         </div>
         <p className="text-xs text-dark-text-muted mt-3">
-          Selected: <span className="text-terminal-500 font-mono">{location || '0 locations'}</span> • Select one or more locations to search for businesses
+          Selected: <span className="text-terminal-500 font-mono">{location || '0 locations'}</span> • Enter city name, zip code, or postal code
         </p>
       </div>
 
@@ -211,9 +211,9 @@ export default function GoogleMapsScraper() {
       <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-6">
         <h4 className="text-sm font-medium text-blue-400 mb-2">How Google Maps Scraping Works</h4>
         <ul className="text-sm text-dark-text-secondary space-y-2">
-          <li>• Searches Google Maps for businesses matching your category in selected locations</li>
-          <li>• Extracts business name, address, phone, website, rating, and review count</li>
-          <li>• Optional enrichment finds additional contact information</li>
+          <li>• Searches Google Maps by city, zip code, or postal code</li>
+          <li>• Extracts business name, address, phone, <span className="text-blue-400">website</span>, and <span className="text-blue-400">email</span></li>
+          <li>• Captures <span className="text-blue-400">rating & sentiment analysis</span> to assess business reputation</li>
           <li>• Results are saved as leads and can be used in campaigns</li>
         </ul>
       </div>

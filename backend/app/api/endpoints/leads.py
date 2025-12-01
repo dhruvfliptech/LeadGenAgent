@@ -12,7 +12,7 @@ from datetime import datetime
 from app.core.database import get_db
 from app.models.leads import Lead
 from app.models.locations import Location
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 
 class LeadCreate(BaseModel):
@@ -79,7 +79,6 @@ class LeadResponse(BaseModel):
     location: LocationInfo
     category: Optional[str]
     subcategory: Optional[str]
-    source: Optional[str] = "craigslist"  # Source of the lead (craigslist, google_maps, linkedin, etc.)
     is_processed: bool
     is_contacted: bool
     status: str
@@ -89,6 +88,10 @@ class LeadResponse(BaseModel):
     scraped_at: datetime
     created_at: datetime
     updated_at: datetime
+
+    # Source tracking
+    source: str = "craigslist"
+    source_metadata: Optional[dict] = None  # Maps from attributes field
 
     # AI MVP fields
     ai_analysis: Optional[str] = None
@@ -100,6 +103,51 @@ class LeadResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+    @model_validator(mode='before')
+    @classmethod
+    def map_attributes_to_source_metadata(cls, data):
+        """Map the 'attributes' field from Lead model to 'source_metadata' for API response."""
+        if hasattr(data, '__dict__'):
+            # SQLAlchemy model object
+            data_dict = {
+                'id': data.id,
+                'craigslist_id': data.craigslist_id,
+                'title': data.title,
+                'description': data.description,
+                'price': data.price,
+                'url': data.url,
+                'email': data.email,
+                'phone': data.phone,
+                'contact_name': data.contact_name,
+                'compensation': data.compensation,
+                'employment_type': data.employment_type,
+                'is_remote': data.is_remote,
+                'reply_email': data.reply_email,
+                'reply_phone': data.reply_phone,
+                'location': data.location,
+                'category': data.category,
+                'subcategory': data.subcategory,
+                'is_processed': data.is_processed,
+                'is_contacted': data.is_contacted,
+                'status': data.status,
+                'qualification_score': data.qualification_score,
+                'qualification_reasoning': data.qualification_reasoning,
+                'posted_at': data.posted_at,
+                'scraped_at': data.scraped_at,
+                'created_at': data.created_at,
+                'updated_at': data.updated_at,
+                'source': data.source,
+                'source_metadata': data.attributes,  # Map attributes to source_metadata
+                'ai_analysis': data.ai_analysis,
+                'ai_model': data.ai_model,
+                'ai_cost': data.ai_cost,
+                'ai_request_id': data.ai_request_id,
+                'generated_email_subject': data.generated_email_subject,
+                'generated_email_body': data.generated_email_body,
+            }
+            return data_dict
+        return data
 
 
 router = APIRouter()
